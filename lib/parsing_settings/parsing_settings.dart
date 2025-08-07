@@ -81,7 +81,7 @@ class _ParsingSettingsState extends State<ParsingSettings> {
 
 
 
-          SizedBox(width: 20),
+          SizedBox(width: 30),
           ParsingOptionTile(
             text: "属性public",
             value: confModel.supportPublic,

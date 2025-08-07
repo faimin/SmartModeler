@@ -3,6 +3,7 @@ import 'package:model_maker/parsing_settings/parsing_settings_model.dart';
 import 'package:model_maker/parsing_area/json_model_generator/json_model_generator.dart';
 import 'package:model_maker/parsing_area/debouncer.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter/services.dart';
 
 /// 分体窗口
 class SplitWindow extends StatefulWidget {
@@ -69,96 +70,133 @@ class _SplitWindowState extends State<SplitWindow> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        return GestureDetector(
-          onPanUpdate: (details) {
-            _updateSplitPosition(details.localPosition);
-          },
-          child: Stack(
-            children: [
-              Positioned(
-                left: 0,
-                top: 0,
-                bottom: 0,
-                width: constraints.maxWidth * _splitPosition,
-                child: Container(
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.only(
-                      bottomLeft: Radius.circular(35), // 👈 左下角圆角
-                    ),
-                  ),
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(15, 1, 1, 1),
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(minHeight: double.infinity, minWidth: double.infinity),
-                      child: Column(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              maxLines: null,
-                              decoration: InputDecoration(
-                                hintText: "请在此处输入json文本或接口文档",
-                                hintStyle: TextStyle(color: Colors.grey),
-                                border: InputBorder.none,
-                              ),
-                              controller: textEditingController,
-                              onChanged: (value) {
-                                _confModel.resetpastedJsonString();
-                                _handleConfChange();
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
+        final totalWidth = constraints.maxWidth;
+        final leftWidth = totalWidth * _splitPosition;
+        final rightWidth = totalWidth * (1 - _splitPosition) - _centerSeplineWidth;
+
+        return Stack(
+          children: [
+            // 左侧输入框
+            Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: leftWidth,
+              child: _buildPanel(
+                controller: textEditingController,
+                hintText: "请在此处输入JSON内容",
+                isReadOnly: false,
+                onCopy: () {
+                  Clipboard.setData(ClipboardData(text: textEditingController.text));
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已复制输入内容')));
+                },
+                onChanged: (value) {
+                  _confModel.resetpastedJsonString();
+                  _handleConfChange();
+                },
+                borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(35)),
               ),
-              Positioned(
-                left: constraints.maxWidth * _splitPosition,
-                top: 0,
-                bottom: 0,
-                width: _centerSeplineWidth,
-                // 分隔条宽度
-                child: Container(
-                  color: Colors.black,
-                  child: Center(child: Icon(Icons.drag_handle, size: _centerSeplineWidth * 0.8)),
-                ),
+            ),
+
+            // 中间分隔条
+            Positioned(
+              left: leftWidth,
+              top: 0,
+              bottom: 0,
+              width: _centerSeplineWidth + 20, // 扩大拖拽范围
+              child: _buildSplitter(),
+            ),
+
+            // 右侧输出框
+            Positioned(
+              left: leftWidth + _centerSeplineWidth,
+              top: 0,
+              bottom: 0,
+              width: rightWidth,
+              child: _buildPanel(
+                controller: textResultController,
+                hintText: "模型类生成后显示在此处",
+                isReadOnly: true,
+                onCopy: () {
+                  Clipboard.setData(ClipboardData(text: textResultController.text));
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已复制输出内容')));
+                },
+                borderRadius: const BorderRadius.only(bottomRight: Radius.circular(35)),
               ),
-              Positioned(
-                left: constraints.maxWidth * _splitPosition + _centerSeplineWidth,
-                top: 0,
-                bottom: 0,
-                width: constraints.maxWidth * (1 - _splitPosition) - _centerSeplineWidth,
-                child: Container(
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.only(
-                      bottomRight: Radius.circular(35), // 👈 左下角圆角
-                    ),
-                  ),
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(15, 1, 1, 1),
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(minHeight: double.infinity, minWidth: double.infinity),
-                      child: TextField(
-                        readOnly: true,
-                        maxLines: null,
-                        decoration: InputDecoration(
-                          hintText: "模型类生成后显示在此处",
-                          hintStyle: TextStyle(color: Colors.grey),
-                          border: InputBorder.none,
-                        ),
-                        controller: textResultController,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         );
       },
+    );
+  }
+
+  Widget _buildPanel({
+    required TextEditingController controller,
+    required String hintText,
+    required bool isReadOnly,
+    required VoidCallback onCopy,
+    BorderRadius? borderRadius,
+    ValueChanged<String>? onChanged,
+  }) {
+    return Container(
+      decoration: BoxDecoration(color: Colors.white, borderRadius: borderRadius),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(15, 1, 1, 1),
+        child: Column(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: controller,
+                readOnly: isReadOnly,
+                maxLines: null,
+                expands: true, // 让 TextField 自动撑满空间
+                onChanged: onChanged,
+                decoration: InputDecoration(
+                  hintText: hintText,
+                  hintStyle: const TextStyle(color: Colors.grey),
+                  border: InputBorder.none,
+                ),
+              ),
+            ),
+            Align(
+              alignment: Alignment.bottomRight,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 20.0, right: 20.0),
+                child: Container(
+                  width: 50,
+                  height: 50,
+                  decoration: const BoxDecoration(
+                    color: Colors.black, // 背景色
+                    shape: BoxShape.circle, // 圆形
+                  ),
+                  child: IconButton(
+                    iconSize: 22,
+                    icon: const Icon(Icons.copy, color: Colors.white), // 图标颜色改为白色
+                    tooltip: "复制",
+                    onPressed: onCopy,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSplitter() {
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onPanUpdate: (details) {
+        _updateSplitPosition(details.globalPosition);
+      },
+      child: Center(
+        child: Container(
+          width: _centerSeplineWidth,
+          color: Colors.black,
+          child: Icon(Icons.drag_handle, size: _centerSeplineWidth * 0.8),
+        ),
+      ),
     );
   }
 }
