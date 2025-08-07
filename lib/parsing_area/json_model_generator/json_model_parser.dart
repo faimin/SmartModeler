@@ -197,7 +197,7 @@ class ModelFormatter {
     final params = <String>[];
     for (var property in modelInfo.properties) {
       final key = settings.isCamelCase ? StringUtils.underscoreToCamelCase(property.key) : property.key;
-      final type = property.type;
+      final type = property.toTypeString();
       final isOptional = settings.supportOptional ? '?' : '';
       params.add('$key: $type$isOptional');
     }
