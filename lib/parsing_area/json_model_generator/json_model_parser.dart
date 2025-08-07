@@ -139,7 +139,6 @@ class ModelFormatter {
       // 属性类型释是否是Any, [Any], [String: Any]中的一种
       bool containsAny = typeStr.contains('Any');
 
-      print('typeStr = ${typeStr}');
       if (containsAny) {
         declaration += "$tabSpace@SmartAny\n";
       }

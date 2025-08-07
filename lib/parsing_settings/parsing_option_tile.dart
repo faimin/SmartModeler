@@ -24,7 +24,6 @@ class ParsingOptionTile extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: GestureDetector(
-        // borderRadius: BorderRadius.circular(999),
         onTap: () => onChanged(!value), // 点击整块切换状态
         child: Container(
           padding: const EdgeInsets.only(left: 8, right: 10, top: 6, bottom: 6),

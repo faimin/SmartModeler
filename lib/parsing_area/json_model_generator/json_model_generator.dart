@@ -5,7 +5,7 @@ import 'package:model_maker/parsing_area/json_model_generator/model_info.dart';
 
 final todoKey = '// TODO: ';
 
-/** JSONTool 功能
+/** JsonModelGenerator 功能
  * 1. 校验JSON的格式，并提供智能补全。
  * 2. 通过Value获取类型，以及对应的默认值。判断当前值是否是subModel。
  * 3. JSON转Modelinfo，包含生成propertyInfo，

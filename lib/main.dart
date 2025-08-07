@@ -36,9 +36,10 @@ class MyApp extends StatelessWidget {
 
 
 /** ToDo List
- * 1. 构造方法的bug
- * 2. Any相关的类型添加@SmartAny
- * 3. json格式化方式
- * 4. json智能补全
+ * 1. [done]构造方法的bug
+ * 2. [done]Any相关的类型添加@SmartAny
+ * 3. json解析报错提示
+ * 4. json格式化方式
+ * 5. json智能补全
  * 
 */

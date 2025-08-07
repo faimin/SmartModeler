@@ -32,7 +32,7 @@ class JsonValidator {
         return obj;
       }
     } catch (e) {
-      return '$e'; // 返回错误信息字符串
+      throw '$e'; // 返回错误信息字符串
     }
   }
 }

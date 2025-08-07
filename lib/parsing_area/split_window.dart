@@ -46,7 +46,9 @@ class _SplitWindowState extends State<SplitWindow> {
               outputResult = textResultController.text;
             });
           }) // 成功回调
-          .catchError((error) => print('错误: $error')) // 错误回调
+          .catchError((error) {
+            print('错误: $error');
+          })
           .whenComplete(() => print('操作完成')); // 最终回调
     });
   }
