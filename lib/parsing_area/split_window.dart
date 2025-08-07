@@ -4,6 +4,12 @@ import 'package:model_maker/parsing_area/json_model_generator/json_model_generat
 import 'package:model_maker/parsing_area/debouncer.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
+import 'package:syntax_highlight/syntax_highlight.dart';
+
+late final Highlighter _jsonLightHighlighter;
+late final Highlighter _jsonDarkHighlighter;
+late final Highlighter _swiftLightHighlighter;
+late final Highlighter _swiftDarkHighlighter;
 
 /// 分体窗口
 class SplitWindow extends StatefulWidget {
@@ -13,6 +19,24 @@ class SplitWindow extends StatefulWidget {
 }
 
 class _SplitWindowState extends State<SplitWindow> {
+  @override
+  void initState() async {
+    super.initState();
+
+    // 初始化语法高亮
+    await Highlighter.initialize(["json", "swift"]);
+
+    // Load the default light theme and create a highlighter.
+    var lightTheme = await HighlighterTheme.loadLightTheme();
+    _swiftLightHighlighter = Highlighter(language: 'swift', theme: lightTheme);
+    _jsonLightHighlighter = Highlighter(language: 'json', theme: lightTheme);
+
+    // Load the default dark theme and create a highlighter.
+    var darkTheme = await HighlighterTheme.loadDarkTheme();
+    _swiftDarkHighlighter = Highlighter(language: 'swift', theme: darkTheme);
+    _jsonDarkHighlighter = Highlighter(language: 'json', theme: darkTheme);
+  }
+
   final Debouncer _debouncer = Debouncer(Duration(seconds: 1));
 
   /// 初始分割位置为中间
@@ -39,7 +63,10 @@ class _SplitWindowState extends State<SplitWindow> {
   /// 配置变更后刷新页面数据
   void _handleConfChange() {
     _debouncer.run(() {
-      JsonModelGenerator.asyncGenerateModels(textEditingController.text, _confModel)
+      JsonModelGenerator.asyncGenerateModels(
+            textEditingController.text,
+            _confModel,
+          )
           .then((data) {
             setState(() {
               textResultController.text = data ?? '';
@@ -74,7 +101,8 @@ class _SplitWindowState extends State<SplitWindow> {
       builder: (context, constraints) {
         final totalWidth = constraints.maxWidth;
         final leftWidth = totalWidth * _splitPosition;
-        final rightWidth = totalWidth * (1 - _splitPosition) - _centerSeplineWidth;
+        final rightWidth =
+            totalWidth * (1 - _splitPosition) - _centerSeplineWidth;
 
         return Stack(
           children: [
@@ -89,14 +117,20 @@ class _SplitWindowState extends State<SplitWindow> {
                 hintText: "请在此处输入JSON内容",
                 isReadOnly: false,
                 onCopy: () {
-                  Clipboard.setData(ClipboardData(text: textEditingController.text));
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已复制输入内容')));
+                  Clipboard.setData(
+                    ClipboardData(text: textEditingController.text),
+                  );
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(const SnackBar(content: Text('已复制输入内容')));
                 },
                 onChanged: (value) {
                   _confModel.resetpastedJsonString();
                   _handleConfChange();
                 },
-                borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(35)),
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(35),
+                ),
               ),
             ),
 
@@ -120,10 +154,16 @@ class _SplitWindowState extends State<SplitWindow> {
                 hintText: "模型类生成后显示在此处",
                 isReadOnly: true,
                 onCopy: () {
-                  Clipboard.setData(ClipboardData(text: textResultController.text));
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已复制输出内容')));
+                  Clipboard.setData(
+                    ClipboardData(text: textResultController.text),
+                  );
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(const SnackBar(content: Text('已复制输出内容')));
                 },
-                borderRadius: const BorderRadius.only(bottomRight: Radius.circular(35)),
+                borderRadius: const BorderRadius.only(
+                  bottomRight: Radius.circular(35),
+                ),
               ),
             ),
           ],
@@ -141,7 +181,10 @@ class _SplitWindowState extends State<SplitWindow> {
     ValueChanged<String>? onChanged,
   }) {
     return Container(
-      decoration: BoxDecoration(color: Colors.white, borderRadius: borderRadius),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: borderRadius,
+      ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(15, 1, 1, 1),
         child: Column(
@@ -173,7 +216,10 @@ class _SplitWindowState extends State<SplitWindow> {
                   ),
                   child: IconButton(
                     iconSize: 22,
-                    icon: const Icon(Icons.copy, color: Colors.white), // 图标颜色改为白色
+                    icon: const Icon(
+                      Icons.copy,
+                      color: Colors.white,
+                    ), // 图标颜色改为白色
                     tooltip: "复制",
                     onPressed: onCopy,
                   ),

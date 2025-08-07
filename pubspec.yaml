@@ -39,6 +39,7 @@ dependencies:
   provider: ^6.1.5
   collection: ^1.19.1
   shared_preferences: 2.5.3
+  syntax_highlight: ^0.4.0
   
 
 dev_dependencies:
