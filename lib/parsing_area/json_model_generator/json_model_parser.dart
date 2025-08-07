@@ -135,17 +135,22 @@ class ModelFormatter {
 
       String declaration = "";
 
-      // 是数组类型
-
       String typeStr = property.toTypeString();
+      // 属性类型释是否是Any, [Any], [String: Any]中的一种
+      bool containsAny = typeStr.contains('Any');
+
+      print('typeStr = ${typeStr}');
+      if (containsAny) {
+        declaration += "$tabSpace@SmartAny\n";
+      }
 
       if (settings.supportOptional) {
-        declaration = '$visibility $key: $typeStr?';
+        declaration += '$tabSpace$visibility $key: $typeStr?';
       } else {
         final defaultValue = property.defaultTypeValue();
-        declaration = '$visibility $key: $typeStr = ${defaultValue}';
+        declaration += '$tabSpace$visibility $key: $typeStr = ${defaultValue}';
       }
-      buffer.writeln('$tabSpace$declaration');
+      buffer.writeln('$declaration');
     }
 
     return buffer.toString();
