@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// 带文字的checkBox
+/// 优化后的带文字圆角 CheckBox 组件
 class ParsingOptionTile extends StatelessWidget {
   final String text;
   final bool value;
@@ -21,34 +21,39 @@ class ParsingOptionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: GestureDetector(
-        onTap: () => onChanged(!value), // 点击整块切换状态
-        child: Container(
-          padding: const EdgeInsets.only(left: 8, right: 10, top: 6, bottom: 6),
-          decoration: BoxDecoration(
-            color: Colors.black12,
-            border: Border.all(color: Colors.black87),
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(
-                height: 20,
-                width: 20,
-                child: Checkbox(
-                  value: value,
-                  onChanged: onChanged,
-                  activeColor: activeColor,
-                  shape: const CircleBorder(),
-                  materialTapTargetSize: MaterialTapTargetSize.padded,
+    const borderRadiusValue = 30.0;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(borderRadiusValue),
+      child: Material(
+        color: Colors.black12,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(borderRadiusValue),
+          onTap: () => onChanged(!value), // 点击整块切换状态
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.black87, width: 1.3),
+              borderRadius: BorderRadius.circular(borderRadiusValue),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: Checkbox(
+                    value: value,
+                    onChanged: onChanged,
+                    activeColor: activeColor,
+                    shape: const CircleBorder(),
+                    materialTapTargetSize: MaterialTapTargetSize.padded,
+                  ),
                 ),
-              ),
-              SizedBox(width: spacing),
-              Text(text, style: textStyle),
-            ],
+                SizedBox(width: spacing),
+                Text(text, style: textStyle),
+              ],
+            ),
           ),
         ),
       ),
