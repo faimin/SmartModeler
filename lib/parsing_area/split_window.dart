@@ -166,7 +166,7 @@ class _SplitWindowState extends State<SplitWindow> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: const BorderRadius.only(bottomRight: Radius.circular(35)),
+        borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(35)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(3),
@@ -223,11 +223,11 @@ class _SplitWindowState extends State<SplitWindow> {
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 10.0),
         child: Container(
-          width: 50,
-          height: 50,
+          width: 40,
+          height: 40,
           decoration: const BoxDecoration(color: Colors.black, shape: BoxShape.circle),
           child: IconButton(
-            iconSize: 22,
+            iconSize: 20,
             icon: Icon(isResultArea ? Icons.copy : Icons.code, color: Colors.white),
             tooltip: isResultArea ? "复制" : "格式化 JSON",
             onPressed: onPressed,

@@ -58,6 +58,9 @@ class _CodeFieldWithHintState extends State<CodeFieldWithHint> {
         CodeTheme(
           data: widget.themeData,
           child: CodeField(
+            decoration: BoxDecoration(
+              color: Colors.black87,
+            ),
             controller: widget.controller,
             readOnly: widget.readOnly,
             expands: true,

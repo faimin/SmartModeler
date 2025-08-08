@@ -20,34 +20,49 @@ class PageHeader extends StatelessWidget {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 40, // 导航栏高度
-      child: Row(
-        children: [
-          // 左侧logo
-          Image.asset(logoAsset, height: 40, width: 40, fit: BoxFit.contain),
+@override
+Widget build(BuildContext context) {
+  return Container(
+    height: 40,
+    child: Row(
+      children: [
+        // 左侧logo带白色描边
+        Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white, width: 2),
+          ),
+          child: ClipOval(
+            child: Image.asset(logoAsset, height: 50, width: 50, fit: BoxFit.contain),
+          ),
+        ),
 
-          const SizedBox(width: 12),
+        const SizedBox(width: 12),
 
-          // 中间文字描述，使用 Expanded 占满剩余空间
-          Expanded(
-            child: Text(
-              descriptionText,
-              style: const TextStyle(fontSize: 24, color: Colors.white),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+        Expanded(
+          child: Text(
+            descriptionText,
+            style: const TextStyle(fontSize: 24, color: Colors.white),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+
+        // 右侧圆形按钮带白色描边
+        GestureDetector(
+          onTap: _launchURL,
+          child: Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 2),
+            ),
+            child: ClipOval(
+              child: Image.asset(buttonImageAsset, height: 40, width: 40, fit: BoxFit.cover),
             ),
           ),
-
-          // 右侧圆形按钮
-          GestureDetector(
-            onTap: _launchURL,
-            child: ClipOval(child: Image.asset(buttonImageAsset, height: 40, width: 40, fit: BoxFit.cover)),
-          ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
 }
