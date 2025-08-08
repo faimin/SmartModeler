@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:highlight/languages/json.dart';
 import 'package:highlight/languages/swift.dart';
+import 'package:model_maker/parsing_area/json_model_generator/code_field.dart';
 import 'package:model_maker/parsing_area/json_model_generator/json_validator.dart';
 import 'package:model_maker/parsing_settings/parsing_settings_model.dart';
 import 'package:model_maker/parsing_area/json_model_generator/json_model_generator.dart';
@@ -27,31 +28,29 @@ class _SplitWindowState extends State<SplitWindow> {
   /// 中间分隔条的宽度
   final double _centerSeplineWidth = 4;
 
-late CodeController textEditingController;
-late CodeController textResultController;
+  late CodeController textEditingController;
+  late CodeController textResultController;
   late ParsingSettingsModel _confModel;
   late CodeThemeData _codeThemeData;
 
   @override
-void initState() {
-  super.initState();
+  void initState() {
+    super.initState();
 
-  // 左侧 JSON 高亮
-  textEditingController = CodeController(
-    language: json, // 高亮规则
-    text: '',
-  );
+    // 左侧 JSON 高亮
+    textEditingController = CodeController(language: json, text: '');
 
-  // 右侧普通输出
-  textResultController = CodeController(
-    language: swift,
-    text: '',
-  );
+    // 右侧 Model 输出
+    textResultController = CodeController(language: swift, text: '');
 
     _codeThemeData = CodeThemeData(styles: atomOneDarkTheme);
+  }
 
-
-}
+  @override
+  void dispose() {
+    _confModel.removeListener(_handleConfChange);
+    super.dispose();
+  }
 
   @override
   void didChangeDependencies() {
@@ -64,7 +63,66 @@ void initState() {
     _confModel.addListener(_handleConfChange);
   }
 
-  /// 配置变更后刷新页面数据
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final totalWidth = constraints.maxWidth;
+        final leftWidth = totalWidth * _splitPosition;
+        final rightWidth = totalWidth * (1 - _splitPosition) - _centerSeplineWidth;
+
+        return Stack(
+          children: [
+            // 左侧输入框
+            Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: leftWidth,
+              child: _buildJSONPanel(
+                controller: textEditingController,
+                hintText: "请在此处输入JSON内容",
+                onClick: () {
+                  var formatJson = JsonValidator.tryFormatJson(textEditingController.text);
+                  textEditingController.text = formatJson;
+                },
+                onChanged: (value) {
+                  _confModel.resetpastedJsonString();
+                  _handleConfChange();
+                },
+              ),
+            ),
+
+            // 中间分隔条
+            Positioned(
+              left: leftWidth,
+              top: 0,
+              bottom: 0,
+              width: _centerSeplineWidth + 20, // 扩大拖拽范围
+              child: _buildSplitter(),
+            ),
+
+            // 右侧输出框
+            Positioned(
+              left: leftWidth + _centerSeplineWidth,
+              top: 0,
+              bottom: 0,
+              width: rightWidth,
+              child: _buildModelPanel(
+                controller: textResultController,
+                onClick: () {
+                  Clipboard.setData(ClipboardData(text: textResultController.text));
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已复制输出内容')));
+                },
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+    /// 配置变更后刷新页面数据
   void _handleConfChange() {
     _debouncer.run(() {
       JsonModelGenerator.asyncGenerateModels(textEditingController.text, _confModel)
@@ -99,131 +157,85 @@ void initState() {
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final totalWidth = constraints.maxWidth;
-        final leftWidth = totalWidth * _splitPosition;
-        final rightWidth = totalWidth * (1 - _splitPosition) - _centerSeplineWidth;
-
-        return Stack(
+  Widget _buildJSONPanel({
+    required CodeController controller,
+    required String hintText,
+    required VoidCallback onClick,
+    ValueChanged<String>? onChanged,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: const BorderRadius.only(bottomRight: Radius.circular(35)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(3),
+        child: Column(
           children: [
-            // 左侧输入框
-            Positioned(
-              left: 0,
-              top: 0,
-              bottom: 0,
-              width: leftWidth,
-              child: _buildPanel(
-                controller: textEditingController,
-                hintText: "请在此处输入JSON内容",
-                isResultArea: false,
-                onCopy: () {
-                  var formatJson = JsonValidator.tryFormatJson(textEditingController.text);
-                  textEditingController.text = formatJson;
-                  // Clipboard.setData(ClipboardData(text: textEditingController.text));
-                  // ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已复制输入内容')));
-                },
-                onChanged: (value) {
-                  _confModel.resetpastedJsonString();
-                  _handleConfChange();
-                },
-                borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(35)),
+            Expanded(
+              child: Stack(
+                children: [
+                  CodeFieldWithHint(
+                    controller: controller,
+                    themeData: _codeThemeData,
+                    onChanged: onChanged,
+                    hintText: "请输入 JSON 内容",
+                  ),
+                ],
               ),
             ),
-
-            // 中间分隔条
-            Positioned(
-              left: leftWidth,
-              top: 0,
-              bottom: 0,
-              width: _centerSeplineWidth + 20, // 扩大拖拽范围
-              child: _buildSplitter(),
-            ),
-
-            // 右侧输出框
-            Positioned(
-              left: leftWidth + _centerSeplineWidth,
-              top: 0,
-              bottom: 0,
-              width: rightWidth,
-              child: _buildPanel(
-                controller: textResultController,
-                hintText: "模型类生成后显示在此处",
-                isResultArea: true,
-                onCopy: () {
-                  Clipboard.setData(ClipboardData(text: textResultController.text));
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已复制输出内容')));
-                },
-                borderRadius: const BorderRadius.only(bottomRight: Radius.circular(35)),
-              ),
-            ),
+            _buildActionButton(false, onClick),
           ],
-        );
-      },
+        ),
+      ),
     );
   }
 
-  Widget _buildPanel({
-  required CodeController controller,
-  required String hintText,
-  required bool isResultArea,
-  required VoidCallback onCopy,
-  BorderRadius? borderRadius,
-  ValueChanged<String>? onChanged,
-}) {
-  return Container(
-    decoration: BoxDecoration(color: Colors.white, borderRadius: borderRadius),
-    child: Padding(
-      padding: const EdgeInsets.all(3),
-      child: Column(
-        children: [
-          Expanded(
-            child: CodeTheme(
-              data: _codeThemeData,
-              child: CodeField(
-                controller: controller,
-                readOnly: isResultArea,
-                maxLines: null,
-                expands: true,
-                lineNumberStyle: const LineNumberStyle(
-                  textStyle: TextStyle(color: Colors.white70),
-                ),
-                textStyle: const TextStyle(
-              fontFamily: 'SF Mono',  // macOS/Xcode 等宽字体
-              fontSize: 14,
-                ),
-                onChanged: onChanged,
-              ),
-            ),
-          ),
-          Align(
-            alignment: Alignment.bottomRight,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 10.0),
-              child: Container(
-                width: 50,
-                height: 50,
-                decoration: const BoxDecoration(
-                  color: Colors.black,
-                  shape: BoxShape.circle,
-                ),
-                child: IconButton(
-                  iconSize: 22,
-                  icon: Icon(isResultArea ? Icons.copy : Icons.code, color: Colors.white),
-                  tooltip: isResultArea ? "复制" : "格式化 JSON",
-                  onPressed: onCopy,
-                ),
-              ),
-            ),
-          ),
-        ],
+  Widget _buildModelPanel({
+    required CodeController controller,
+    required VoidCallback onClick,
+    ValueChanged<String>? onChanged,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: const BorderRadius.only(bottomRight: Radius.circular(35)),
       ),
-    ),
-  );
-}
+      child: Padding(
+        padding: const EdgeInsets.all(3),
+        child: Column(
+          children: [
+            Expanded(
+              child: Stack(
+                children: [CodeFieldWithHint(controller: controller, themeData: _codeThemeData, onChanged: onChanged)],
+              ),
+            ),
+            _buildActionButton(true, onClick),
+          ],
+        ),
+      ),
+    );
+  }
 
+  Widget _buildActionButton(bool isResultArea, VoidCallback onPressed) {
+    return Align(
+      alignment: Alignment.bottomRight,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 10.0),
+        child: Container(
+          width: 50,
+          height: 50,
+          decoration: const BoxDecoration(color: Colors.black, shape: BoxShape.circle),
+          child: IconButton(
+            iconSize: 22,
+            icon: Icon(isResultArea ? Icons.copy : Icons.code, color: Colors.white),
+            tooltip: isResultArea ? "复制" : "格式化 JSON",
+            onPressed: onPressed,
+          ),
+        ),
+      ),
+    );
+  }
 
   Widget _buildSplitter() {
     return GestureDetector(
