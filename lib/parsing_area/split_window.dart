@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:model_maker/parsing_area/json_model_generator/json_validator.dart';
 import 'package:model_maker/parsing_settings/parsing_settings_model.dart';
 import 'package:model_maker/parsing_area/json_model_generator/json_model_generator.dart';
 import 'package:model_maker/parsing_area/debouncer.dart';
@@ -37,21 +38,24 @@ class _SplitWindowState extends State<SplitWindow> {
   }
 
   /// 配置变更后刷新页面数据
-  void _handleConfChange() {
-    _debouncer.run(() {
-      JsonModelGenerator.asyncGenerateModels(textEditingController.text, _confModel)
-          .then((data) {
-            setState(() {
-              textResultController.text = data ?? '';
-              outputResult = textResultController.text;
-            });
-          }) // 成功回调
-          .catchError((error) {
-            print('错误: $error');
-          })
-          .whenComplete(() => print('操作完成')); // 最终回调
-    });
-  }
+void _handleConfChange() {
+  _debouncer.run(() {
+    JsonModelGenerator.asyncGenerateModels(textEditingController.text, _confModel)
+        .then((data) {
+          setState(() {
+            textResultController.text = data ?? '';
+            outputResult = textResultController.text;
+          });
+        })
+        .catchError((error) {
+          setState(() {
+            textResultController.text = error.toString(); // 错误信息直接显示在右侧
+            outputResult = textResultController.text;
+          });
+        })
+        .whenComplete(() => print('操作完成'));
+  });
+}
 
   /// 更改分割线的位置
   void _updateSplitPosition(Offset position) {
@@ -87,10 +91,12 @@ class _SplitWindowState extends State<SplitWindow> {
               child: _buildPanel(
                 controller: textEditingController,
                 hintText: "请在此处输入JSON内容",
-                isReadOnly: false,
+                isResultArea: false,
                 onCopy: () {
-                  Clipboard.setData(ClipboardData(text: textEditingController.text));
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已复制输入内容')));
+                  var formatJson = JsonValidator.tryFormatJson(textEditingController.text);
+                  textEditingController.text = formatJson;
+                  // Clipboard.setData(ClipboardData(text: textEditingController.text));
+                  // ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已复制输入内容')));
                 },
                 onChanged: (value) {
                   _confModel.resetpastedJsonString();
@@ -118,7 +124,7 @@ class _SplitWindowState extends State<SplitWindow> {
               child: _buildPanel(
                 controller: textResultController,
                 hintText: "模型类生成后显示在此处",
-                isReadOnly: true,
+                isResultArea: true,
                 onCopy: () {
                   Clipboard.setData(ClipboardData(text: textResultController.text));
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已复制输出内容')));
@@ -135,7 +141,7 @@ class _SplitWindowState extends State<SplitWindow> {
   Widget _buildPanel({
     required TextEditingController controller,
     required String hintText,
-    required bool isReadOnly,
+    required bool isResultArea,
     required VoidCallback onCopy,
     BorderRadius? borderRadius,
     ValueChanged<String>? onChanged,
@@ -149,7 +155,7 @@ class _SplitWindowState extends State<SplitWindow> {
             Expanded(
               child: TextField(
                 controller: controller,
-                readOnly: isReadOnly,
+                readOnly: isResultArea,
                 maxLines: null,
                 expands: true, // 让 TextField 自动撑满空间
                 onChanged: onChanged,
@@ -173,8 +179,8 @@ class _SplitWindowState extends State<SplitWindow> {
                   ),
                   child: IconButton(
                     iconSize: 22,
-                    icon: const Icon(Icons.copy, color: Colors.white), // 图标颜色改为白色
-                    tooltip: "复制",
+                    icon: Icon(isResultArea ? Icons.copy : Icons.code, color: Colors.white), // 图标颜色改为白色
+                    tooltip: isResultArea ? "复制" : "格式化 JSON",
                     onPressed: onCopy,
                   ),
                 ),
