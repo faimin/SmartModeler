@@ -128,7 +128,7 @@ class ModelFormatter {
 
       // 加文档注释
       if (settings.addDocComments) {
-        buffer.writeln('$tabSpace/// TODO: description');
+        buffer.writeln('$tabSpace/// description');
       }
 
       final visibility = settings.supportPublic ? 'public var' : 'var';

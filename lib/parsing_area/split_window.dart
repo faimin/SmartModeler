@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:highlight/languages/json.dart';
+import 'package:highlight/languages/swift.dart';
 import 'package:model_maker/parsing_area/json_model_generator/json_validator.dart';
 import 'package:model_maker/parsing_settings/parsing_settings_model.dart';
 import 'package:model_maker/parsing_area/json_model_generator/json_model_generator.dart';
@@ -6,6 +8,8 @@ import 'package:model_maker/parsing_area/debouncer.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
 import 'package:code_text_field/code_text_field.dart';
+// 顶部 imports（确保这几行存在）
+import 'package:flutter_highlight/themes/atom-one-dark.dart'; // 暗黑主题
 
 /// 分体窗口
 class SplitWindow extends StatefulWidget {
@@ -23,9 +27,31 @@ class _SplitWindowState extends State<SplitWindow> {
   /// 中间分隔条的宽度
   final double _centerSeplineWidth = 4;
 
-  var textEditingController = CodeController();
-  var textResultController = CodeController();
+late CodeController textEditingController;
+late CodeController textResultController;
   late ParsingSettingsModel _confModel;
+  late CodeThemeData _codeThemeData;
+
+  @override
+void initState() {
+  super.initState();
+
+  // 左侧 JSON 高亮
+  textEditingController = CodeController(
+    language: json, // 高亮规则
+    text: '',
+  );
+
+  // 右侧普通输出
+  textResultController = CodeController(
+    language: swift,
+    text: '',
+  );
+
+    _codeThemeData = CodeThemeData(styles: atomOneDarkTheme);
+
+
+}
 
   @override
   void didChangeDependencies() {
@@ -140,53 +166,64 @@ class _SplitWindowState extends State<SplitWindow> {
   }
 
   Widget _buildPanel({
-    required CodeController controller,
-    required String hintText,
-    required bool isResultArea,
-    required VoidCallback onCopy,
-    BorderRadius? borderRadius,
-    ValueChanged<String>? onChanged,
-  }) {
-    return Container(
-      decoration: BoxDecoration(color: Colors.white, borderRadius: borderRadius),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(3, 3, 3, 3),
-        child: Column(
-          children: [
-            Expanded(
+  required CodeController controller,
+  required String hintText,
+  required bool isResultArea,
+  required VoidCallback onCopy,
+  BorderRadius? borderRadius,
+  ValueChanged<String>? onChanged,
+}) {
+  return Container(
+    decoration: BoxDecoration(color: Colors.white, borderRadius: borderRadius),
+    child: Padding(
+      padding: const EdgeInsets.all(3),
+      child: Column(
+        children: [
+          Expanded(
+            child: CodeTheme(
+              data: _codeThemeData,
               child: CodeField(
                 controller: controller,
                 readOnly: isResultArea,
                 maxLines: null,
-                expands: true, // 让 TextField 自动撑满空间
+                expands: true,
+                lineNumberStyle: const LineNumberStyle(
+                  textStyle: TextStyle(color: Colors.white70),
+                ),
+                textStyle: const TextStyle(
+              fontFamily: 'SF Mono',  // macOS/Xcode 等宽字体
+              fontSize: 14,
+                ),
                 onChanged: onChanged,
               ),
             ),
-            Align(
-              alignment: Alignment.bottomRight,
-              child: Padding(
-                padding: const EdgeInsets.only(top: 10, bottom: 10.0, right: 10.0),
-                child: Container(
-                  width: 50,
-                  height: 50,
-                  decoration: const BoxDecoration(
-                    color: Colors.black, // 背景色
-                    shape: BoxShape.circle, // 圆形
-                  ),
-                  child: IconButton(
-                    iconSize: 22,
-                    icon: Icon(isResultArea ? Icons.copy : Icons.code, color: Colors.white), // 图标颜色改为白色
-                    tooltip: isResultArea ? "复制" : "格式化 JSON",
-                    onPressed: onCopy,
-                  ),
+          ),
+          Align(
+            alignment: Alignment.bottomRight,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 10.0),
+              child: Container(
+                width: 50,
+                height: 50,
+                decoration: const BoxDecoration(
+                  color: Colors.black,
+                  shape: BoxShape.circle,
+                ),
+                child: IconButton(
+                  iconSize: 22,
+                  icon: Icon(isResultArea ? Icons.copy : Icons.code, color: Colors.white),
+                  tooltip: isResultArea ? "复制" : "格式化 JSON",
+                  onPressed: onCopy,
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
+
 
   Widget _buildSplitter() {
     return GestureDetector(
