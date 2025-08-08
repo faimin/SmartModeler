@@ -32,61 +32,12 @@ class JsonValidator {
       }
       return obj;
     } catch (e) {
-      final errorMsg = e.toString();
-
-      // 提取行列信息
-      final regex = RegExp(r'line (\d+) column (\d+)');
-      final match = regex.firstMatch(errorMsg);
-
-      if (match != null) {
-        final line = int.parse(match.group(1)!);
-        final column = int.parse(match.group(2)!);
-
-        // 获取出错位置附近的文本
-        final lines = jsonString!.split('\n');
-        String context = '';
-        for (int i = line - 2; i <= line; i++) {
-          if (i >= 0 && i < lines.length) {
-            String prefix = (i + 1).toString().padLeft(2) + ' | ';
-            String text = lines[i];
-            if (i == line - 1) {
-              text += '   ← ⚠ 出错位置';
-            }
-            context += prefix + text + '\n';
-          }
-        }
-
-        // 智能推测错误类型
-        String guess = '';
-        if (errorMsg.contains('Expected \':\'')) {
-          guess = '可能问题：属性名后面缺少冒号 (:)';
-        } else if (errorMsg.contains('Unexpected token')) {
-          guess = '可能问题：多余的符号或缺少逗号';
-        } else {
-          guess = '可能问题：请检查括号、引号、逗号是否正确';
-        }
-
-        throw '❌ JSON 格式错误\n'
-            '系统检测位置：第 $line 行，第 $column 列\n'
-            '$guess\n\n'
-            '附近内容：\n$context\n'
-            '系统提示：$errorMsg';
-      } else {
-        final errorMsg = e.toString();
-
-        if (errorMsg.contains("Expected ':'")) {
-          throw '❌ JSON 格式错误\n可能问题：属性名后面缺少冒号 (:)。\n\n系统提示：$errorMsg';
-        } else if (errorMsg.contains("Unexpected token '}'")) {
-          throw '❌ JSON 格式错误\n可能问题：属性后缺少值或多余的逗号。\n\n系统提示：$errorMsg';
-        } else if (errorMsg.contains("Unexpected end of input")) {
-          throw '❌ JSON 格式错误\n可能问题：JSON 数据不完整，缺少结尾括号。\n\n系统提示：$errorMsg';
-        } else {
-          throw '❌ JSON 格式错误\n请检查括号、引号、逗号是否正确。\n\n系统提示：$errorMsg';
-        }
-      }
+      // 抛出格式化好的错误提示
+      throw _parseJsonError(e.toString(), jsonString);
     }
   }
 
+  /// 对json内容进行格式化
   static String tryFormatJson(String? input) {
     try {
       var obj = JsonValidator.tryParseJson(input); // 这里用你的方法
@@ -96,6 +47,68 @@ class JsonValidator {
       return format;
     } catch (e) {
       throw '$e'; // 返回错误信息字符串
+    }
+  }
+
+  /// 根据异常信息和源文本，生成用户友好的错误提示字符串
+  static String _parseJsonError(String errorMsg, String? jsonString) {
+    // 尝试提取行列信息
+    final regex = RegExp(r'line (\d+) column (\d+)');
+    final match = regex.firstMatch(errorMsg);
+
+    // 有行列信息，根据row 和 column 做可读提示
+    if (match != null && jsonString != null) {
+      final line = int.parse(match.group(1)!);
+      final column = int.parse(match.group(2)!);
+
+      final context = _getErrorContext(jsonString, line);
+
+      final guess = _guessErrorType(errorMsg);
+
+      return '❌ JSON 格式错误\n'
+          '系统检测位置：第 $line 行，第 $column 列\n'
+          '$guess\n\n'
+          '附近内容：\n$context\n'
+          '系统提示：$errorMsg';
+    }
+
+    // 没有行列信息，做关键词判断
+    if (errorMsg.contains("Expected ':'")) {
+      return '❌ JSON 格式错误\n可能问题：属性名后面缺少冒号 (:)。\n\n系统提示：$errorMsg';
+    } else if (errorMsg.contains("Unexpected token '}'")) {
+      return '❌ JSON 格式错误\n可能问题：属性后缺少值或多余的逗号。\n\n系统提示：$errorMsg';
+    } else if (errorMsg.contains("Unexpected end of input")) {
+      return '❌ JSON 格式错误\n可能问题：JSON 数据不完整，缺少结尾括号。\n\n系统提示：$errorMsg';
+    } else {
+      return '❌ JSON 格式错误\n请检查括号、引号、逗号是否正确。\n\n系统提示：$errorMsg';
+    }
+  }
+
+  /// 获取出错行的上下文内容（前2行到当前行）
+  static String _getErrorContext(String jsonString, int line) {
+    final lines = jsonString.split('\n');
+    String context = '';
+    for (int i = line - 2; i <= line; i++) {
+      if (i >= 0 && i < lines.length) {
+        String prefix = (i + 1).toString().padLeft(2) + ' | ';
+        String text = lines[i];
+        if (i == line - 1) {
+          text += '   ← ⚠ 出错位置';
+        }
+        context += prefix + text + '\n';
+      }
+    }
+    return context;
+  }
+
+  /// 根据错误信息猜测错误类型
+  static String _guessErrorType(String errorMsg) {
+    if (errorMsg.contains('Expected \':\'')) {
+      return '可能问题：属性名后面缺少冒号 (:)';
+    } else if (errorMsg.contains('Unexpected token')) {
+      return '可能问题：多余的符号或缺少逗号';
+    } else {
+      return '可能问题：请检查括号、引号、逗号是否正确';
     }
   }
 }
