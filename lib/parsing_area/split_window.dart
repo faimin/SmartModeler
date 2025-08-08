@@ -5,6 +5,7 @@ import 'package:model_maker/parsing_area/json_model_generator/json_model_generat
 import 'package:model_maker/parsing_area/debouncer.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
+import 'package:code_text_field/code_text_field.dart';
 
 /// 分体窗口
 class SplitWindow extends StatefulWidget {
@@ -22,8 +23,8 @@ class _SplitWindowState extends State<SplitWindow> {
   /// 中间分隔条的宽度
   final double _centerSeplineWidth = 4;
 
-  var textEditingController = TextEditingController();
-  var textResultController = TextEditingController();
+  var textEditingController = CodeController();
+  var textResultController = CodeController();
   late ParsingSettingsModel _confModel;
 
   @override
@@ -38,24 +39,24 @@ class _SplitWindowState extends State<SplitWindow> {
   }
 
   /// 配置变更后刷新页面数据
-void _handleConfChange() {
-  _debouncer.run(() {
-    JsonModelGenerator.asyncGenerateModels(textEditingController.text, _confModel)
-        .then((data) {
-          setState(() {
-            textResultController.text = data ?? '';
-            outputResult = textResultController.text;
-          });
-        })
-        .catchError((error) {
-          setState(() {
-            textResultController.text = error.toString(); // 错误信息直接显示在右侧
-            outputResult = textResultController.text;
-          });
-        })
-        .whenComplete(() => print('操作完成'));
-  });
-}
+  void _handleConfChange() {
+    _debouncer.run(() {
+      JsonModelGenerator.asyncGenerateModels(textEditingController.text, _confModel)
+          .then((data) {
+            setState(() {
+              textResultController.text = data ?? '';
+              outputResult = textResultController.text;
+            });
+          })
+          .catchError((error) {
+            setState(() {
+              textResultController.text = error.toString(); // 错误信息直接显示在右侧
+              outputResult = textResultController.text;
+            });
+          })
+          .whenComplete(() => print('操作完成'));
+    });
+  }
 
   /// 更改分割线的位置
   void _updateSplitPosition(Offset position) {
@@ -139,7 +140,7 @@ void _handleConfChange() {
   }
 
   Widget _buildPanel({
-    required TextEditingController controller,
+    required CodeController controller,
     required String hintText,
     required bool isResultArea,
     required VoidCallback onCopy,
@@ -149,27 +150,22 @@ void _handleConfChange() {
     return Container(
       decoration: BoxDecoration(color: Colors.white, borderRadius: borderRadius),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(15, 1, 1, 1),
+        padding: const EdgeInsets.fromLTRB(3, 3, 3, 3),
         child: Column(
           children: [
             Expanded(
-              child: TextField(
+              child: CodeField(
                 controller: controller,
                 readOnly: isResultArea,
                 maxLines: null,
                 expands: true, // 让 TextField 自动撑满空间
                 onChanged: onChanged,
-                decoration: InputDecoration(
-                  hintText: hintText,
-                  hintStyle: const TextStyle(color: Colors.grey),
-                  border: InputBorder.none,
-                ),
               ),
             ),
             Align(
               alignment: Alignment.bottomRight,
               child: Padding(
-                padding: const EdgeInsets.only(bottom: 20.0, right: 20.0),
+                padding: const EdgeInsets.only(top: 10, bottom: 10.0, right: 10.0),
                 child: Container(
                   width: 50,
                   height: 50,
